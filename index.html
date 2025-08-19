@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>수지신협 알밤줍기 체험 행사 접수</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #8B4513 0%, #DEB887 50%, #F4A460 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 10px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+            padding: 30px 25px;
+            max-width: 420px;
+            width: 100%;
+            margin-top: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #8B4513;
+        }
+        
+        .header h1 {
+            font-size: clamp(20px, 4vw, 24px);
+            margin-bottom: 8px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #8B4513, #D2691E);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #f0f0f0;
+            border-radius: 2px;
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #8B4513, #D2691E);
+            transition: width 0.3s ease;
+            border-radius: 2px;
+        }
+        
+        .step {
+            display: none;
+            animation: slideIn 0.5s ease-out;
+        }
+        
+        .step.active {
+            display: block;
+        }
+        
+        @keyframes slideIn {
+            from { 
+                opacity: 0; 
+                transform: translateX(20px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateX(0); 
+            }
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #8B4513;
+            box-shadow: 0 0 0 3px rgba(139, 69, 19, 0.1);
+        }
+        
+        .form-group .helper-text {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            display: inline-block;
+            text-decoration: none;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #8B4513, #D2691E);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(139, 69, 19, 0.3);
+        }
+        
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #333;
+            border: 2px solid #e9ecef;
+        }
+        
+        .btn-secondary:hover {
+            background: #e9ecef;
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        
+        .departure-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 15px;
+        }
+        
+        .departure-btn {
+            padding: 16px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            font-weight: 600;
+            text-align: center;
+        }
+        
+        .departure-btn:hover {
+            border-color: #8B4513;
+            background: #fdf5e6;
+        }
+        
+        .departure-btn.selected {
+            background: linear-gradient(135deg, #8B4513, #D2691E);
+            color: white;
+            border-color: #8B4513;
+        }
+        
+        .vehicle-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 15px;
+        }
+        
+        .vehicle-btn {
+            padding: 16px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            text-align: center;
+        }
+        
+        .vehicle-btn:hover {
+            border-color: #8B4513;
+            background: #fdf5e6;
+        }
+        
+        .vehicle-btn.selected {
+            background: linear-gradient(135deg, #8B4513, #D2691E);
+            color: white;
+            border-color: #8B4513;
+        }
+        
+        .vehicle-btn.full {
+            background: #fff5f5;
+            color: #c53030;
+            cursor: pointer;
+            border-color: #fed7d7;
+        }
+        
+        .vehicle-info {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .remaining-seats {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        
+        .checkbox-group {
+            margin-bottom: 15px;
+        }
+        
+        .checkbox-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 12px;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .checkbox-item input[type="checkbox"] {
+            margin-right: 12px;
+            margin-top: 2px;
+            transform: scale(1.2);
+        }
+        
+        .checkbox-item label {
+            font-size: 14px;
+            line-height: 1.4;
+            cursor: pointer;
+            margin: 0;
+            flex: 1;
+        }
+        
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            text-align: center;
+        }
+        
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            text-align: center;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #8B4513;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .step-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #8B4513;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .btn-group .btn {
+            flex: 1;
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                padding: 25px 20px;
+                margin-top: 10px;
+            }
+            
+            .departure-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .vehicle-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .btn-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌰 알밤줍기 체험 행사</h1>
+            <p>수지신협 조합원 접수</p>
+        </div>
+        
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill" style="width: 20%"></div>
+        </div>
+
+        <!-- 1단계: 개인정보 입력 -->
+        <div class="step active" id="step1">
+            <div class="step-title">개인정보 입력</div>
+            
+            <div id="errorMessage" class="error-message" style="display: none;"></div>
+            <div id="successMessage" class="success-message" style="display: none;"></div>
+            
+            <div class="form-group">
+                <label for="name">이름</label>
+                <input type="text" id="name" placeholder="성명을 입력하세요">
+            </div>
+            
+            <div class="form-group">
+                <label for="phone">연락처</label>
+                <input type="tel" id="phone" placeholder="010-0000-0000" maxlength="13">
+                <div class="helper-text">숫자만 입력하시면 자동으로 하이픈이 추가됩니다</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="idNumber">주민등록번호</label>
+                <input type="text" id="idNumber" placeholder="000000-0000000" maxlength="14">
+                <div class="helper-text">여행자보험 가입을 위해 필요합니다</div>
+            </div>
+            
+            <button class="btn btn-primary" id="checkMemberBtn">
+                <span id="checkBtnText">조합원 확인</span>
+            </button>
+        </div>
+
+        <!-- 2단계: 출발지 선택 -->
+        <div class="step" id="step2">
+            <div class="step-title">출발지 선택</div>
+            
+            <div class="departure-grid" id="departureGrid">
+                <div class="departure-btn" data-departure="본점">본점</div>
+                <div class="departure-btn" data-departure="기흥지점">기흥지점</div>
+                <div class="departure-btn" data-departure="죽전지점">죽전지점</div>
+                <div class="departure-btn" data-departure="상현지점">상현지점</div>
+                <div class="departure-btn" data-departure="동천지점">동천지점</div>
+                <div class="departure-btn" data-departure="동백지점">동백지점</div>
+            </div>
+            
+            <div class="btn-group">
+                <button class="btn btn-secondary" onclick="prevStep()">이전</button>
+                <button class="btn btn-primary" id="selectDepartureBtn" onclick="nextStep()" disabled>다음</button>
+            </div>
+        </div>
+
+        <!-- 3단계: 차량 선택 -->
+        <div class="step" id="step3">
+            <div class="step-title">차량 선택</div>
+            <p id="selectedDeparture" style="text-align: center; color: #666; margin-bottom: 20px;"></p>
+            
+            <div class="vehicle-grid" id="vehicleGrid">
+                <!-- 차량 버튼들이 동적으로 생성됩니다 -->
+            </div>
+            
+            <div class="btn-group">
+                <button class="btn btn-secondary" onclick="prevStep()">이전</button>
+                <button class="btn btn-primary" id="selectVehicleBtn" onclick="nextStep()" disabled>다음</button>
+            </div>
+        </div>
+
+        <!-- 4단계: 동의사항 -->
+        <div class="step" id="step4">
+            <div class="step-title">동의사항</div>
+            
+            <div class="checkbox-group">
+                <div class="checkbox-item">
+                    <input type="checkbox" id="paymentAgreement">
+                    <label for="paymentAgreement">
+                        접수 후 당일 참가비가 입금되지 않을 경우 자동취소 될 수 있습니다
+                    </label>
+                </div>
+                
+                <div class="checkbox-item">
+                    <input type="checkbox" id="privacyAgreement">
+                    <label for="privacyAgreement">
+                        여행자보험가입으로 개인정보 수집·이용에 동의합니다
+                    </label>
+                </div>
+                
+                <div class="checkbox-item">
+                    <input type="checkbox" id="destructionAgreement">
+                    <label for="destructionAgreement">
+                        개인정보는 행사 후 1개월 안에 파기된다는 공지사항을 확인하였습니다
+                    </label>
+                </div>
+            </div>
+            
+            <div class="btn-group">
+                <button class="btn btn-secondary" onclick="prevStep()">이전</button>
+                <button class="btn btn-primary" id="agreeBtn" onclick="nextStep()" disabled>다음</button>
+            </div>
+        </div>
+
+        <!-- 5단계: 최종 확인 -->
+        <div class="step" id="step5">
+            <div class="step-title">접수 확인</div>
+            
+            <div id="finalConfirmation">
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+                    <p><strong>이름:</strong> <span id="confirmName"></span></p>
+                    <p><strong>연락처:</strong> <span id="confirmPhone"></span></p>
+                    <p><strong>출발지:</strong> <span id="confirmDeparture"></span></p>
+                    <p><strong>차량:</strong> <span id="confirmVehicle"></span></p>
+                </div>
+            </div>
+            
+            <div class="btn-group">
+                <button class="btn btn-secondary" onclick="prevStep()">이전</button>
+                <button class="btn btn-primary" id="submitBtn" onclick="submitRegistration()">
+                    <span id="submitBtnText">접수하기</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 1;
+        let selectedDeparture = '';
+        let selectedVehicle = '';
+        let vehicleData = [
+            { departure: '본점', vehicleNumber: '1호차', maxCapacity: 45, remainingSeats: 45 },
+            { departure: '본점', vehicleNumber: '2호차', maxCapacity: 45, remainingSeats: 45 },
+            { departure: '기흥지점', vehicleNumber: '1호차', maxCapacity: 45, remainingSeats: 45 },
+            { departure: '기흥지점', vehicleNumber: '2호차', maxCapacity: 45, remainingSeats: 45 },
+            { departure: '죽전지점', vehicleNumber: '1호차', maxCapacity: 45, remainingSeats: 45 },
+            { departure: '상현지점', vehicleNumber: '1호차', maxCapacity: 45, remainingSeats: 45 },
+            { departure: '동천지점', vehicleNumber: '1호차', maxCapacity: 45, remainingSeats: 45 },
+            { departure: '동백지점', vehicleNumber: '1호차', maxCapacity: 45, remainingSeats: 45 }
+        ];
+        
+        // Google Apps Script Web App URL - 여기에 배포된 웹앱 URL을 입력하세요
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzy_ndy4_r9YIjAGfWBd5NeR7VWaElL658E5mZ_71eMIJmzcbUW0R1BrbD96G01mQr7qw/exec';
+        
+        // 단계 전환
+        function showStep(step) {
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+            document.getElementById('step' + step).classList.add('active');
+            currentStep = step;
+            updateProgress();
+        }
+        
+        function nextStep() {
+            if (currentStep < 5) {
+                showStep(currentStep + 1);
+                
+                if (currentStep === 3) {
+                    loadVehicleData();
+                } else if (currentStep === 5) {
+                    updateFinalConfirmation();
+                }
+            }
+        }
+        
+        function prevStep() {
+            if (currentStep > 1) {
+                showStep(currentStep - 1);
+            }
+        }
+        
+        // 진행률 업데이트
+        function updateProgress() {
+            const progress = (currentStep / 5) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+        }
+        
+        // 전화번호 포맷팅
+        document.getElementById('phone').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            let formattedValue = '';
+            
+            if (value.length > 0) {
+                if (value.length <= 3) {
+                    formattedValue = value;
+                } else if (value.length <= 7) {
+                    formattedValue = value.substring(0, 3) + '-' + value.substring(3);
+                } else {
+                    formattedValue = value.substring(0, 3) + '-' + value.substring(3, 7) + '-' + value.substring(7, 11);
+                }
+            }
+            
+            e.target.value = formattedValue;
+        });
+        
+        // 주민등록번호 포맷팅
+        document.getElementById('idNumber').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            let formattedValue = '';
+            
+            if (value.length > 0) {
+                if (value.length <= 6) {
+                    formattedValue = value;
+                } else {
+                    formattedValue = value.substring(0, 6) + '-' + value.substring(6, 13);
+                }
+            }
+            
+            e.target.value = formattedValue;
+        });
+        
+        // 에러 메시지 표시
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            const successDiv = document.getElementById('successMessage');
+            
+            successDiv.style.display = 'none';
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 3000);
+        }
+        
+        // 성공 메시지 표시
+        function showSuccess(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            const successDiv = document.getElementById('successMessage');
+            
+            errorDiv.style.display = 'none';
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                successDiv.style.display = 'none';
+            }, 3000);
+        }
+        
+        // 조합원 확인 (Google Apps Script 호출)
+        document.getElementById('checkMemberBtn').addEventListener('click', function() {
+            const name = document.getElementById('name').value.trim();
+            const phone = document.getElementById('phone').value.trim();
+            const idNumber = document.getElementById('idNumber').value.replace(/\D/g, '');
+            
+            // 입력값 검증
+            if (!name) {
+                showError('이름을 입력해주세요.');
+                return;
+            }
+            
+            if (!phone || phone.length < 13) {
+                showError('올바른 연락처를 입력해주세요.');
+                return;
+            }
+            
+            if (!idNumber || idNumber.length < 6) {
+                showError('주민등록번호 앞 6자리를 입력해주세요.');
+                return;
+            }
+            
+            // 로딩 상태 표시
+            const btn = document.getElementById('checkMemberBtn');
+            const btnText = document.getElementById('checkBtnText');
+            btn.disabled = true;
+            btnText.innerHTML = '<span class="loading"></span>확인 중...';
+            
+            // Google Apps Script 호출
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    action: 'checkMember',
+                    data: { name, phone, idNumber }
+                })
+            })
+            .then(response => response.json())
+            .then(result => {
+                btn.disabled = false;
+                btnText.textContent = '조합원 확인';
+                
+                if (result.success) {
+                    showSuccess(result.message);
+                    setTimeout(() => {
+                        nextStep();
+                    }, 1500);
+                } else {
+                    showError(result.message);
+                }
+            })
+            .catch(error => {
+                btn.disabled = false;
+                btnText.textContent = '조합원 확인';
+                showError('조합원 확인 중 오류가 발생했습니다. 다시 시도해주세요.');
+                console.error('조합원 확인 오류:', error);
+            });
+        });
+        
+        // 출발지 선택
+        document.querySelectorAll('.departure-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.departure-btn').forEach(b => b.classList.remove('selected'));
+                this.classList.add('selected');
+                selectedDeparture = this.dataset.departure;
+                document.getElementById('selectDepartureBtn').disabled = false;
+            });
+        });
+        
+        // 차량 데이터 로드
+        function loadVehicleData() {
+            document.getElementById('selectedDeparture').textContent = `출발지: ${selectedDeparture}`;
+            
+            const filteredVehicles = vehicleData.filter(v => v.departure === selectedDeparture);
+            displayVehicles(filteredVehicles);
+        }
+        
+        // 차량 표시
+        function displayVehicles(vehicles) {
+            const vehicleGrid = document.getElementById('vehicleGrid');
+            vehicleGrid.innerHTML = '';
+            
+            vehicles.forEach(vehicle => {
+                const vehicleBtn = document.createElement('div');
+                vehicleBtn.className = 'vehicle-btn';
+                vehicleBtn.dataset.vehicle = vehicle.vehicleNumber;
+                
+                const isFull = vehicle.remainingSeats <= 0;
+                
+                if (isFull) {
+                    vehicleBtn.classList.add('full');
+                }
+                
+                vehicleBtn.innerHTML = `
+                    <div class="vehicle-info">${vehicle.vehicleNumber}</div>
+                    <div class="remaining-seats">${isFull ? '만석 (대기접수 가능)' : `남은 좌석: ${vehicle.remainingSeats}석`}</div>
+                `;
+                
+                vehicleBtn.addEventListener('click', function() {
+                    document.querySelectorAll('.vehicle-btn').forEach(b => b.classList.remove('selected'));
+                    this.classList.add('selected');
+                    selectedVehicle = this.dataset.vehicle;
+                    document.getElementById('selectVehicleBtn').disabled = false;
+                });
+                
+                vehicleGrid.appendChild(vehicleBtn);
+            });
+        }
+        
+        // 동의사항 체크
+        function checkAgreements() {
+            const payment = document.getElementById('paymentAgreement').checked;
+            const privacy = document.getElementById('privacyAgreement').checked;
+            const destruction = document.getElementById('destructionAgreement').checked;
+            
+            document.getElementById('agreeBtn').disabled = !(payment && privacy && destruction);
+        }
+        
+        document.getElementById('paymentAgreement').addEventListener('change', checkAgreements);
+        document.getElementById('privacyAgreement').addEventListener('change', checkAgreements);
+        document.getElementById('destructionAgreement').addEventListener('change', checkAgreements);
+        
+        // 최종 확인 정보 업데이트
+        function updateFinalConfirmation() {
+            document.getElementById('confirmName').textContent = document.getElementById('name').value;
+            document.getElementById('confirmPhone').textContent = document.getElementById('phone').value;
+            document.getElementById('confirmDeparture').textContent = selectedDeparture;
+            document.getElementById('confirmVehicle').textContent = selectedVehicle;
+        }
+        
+        // 최종 접수 제출
+        function submitRegistration() {
+            const formData = {
+                name: document.getElementById('name').value.trim(),
+                phone: document.getElementById('phone').value.trim(),
+                idNumber: document.getElementById('idNumber').value.replace(/\D/g, ''),
+                departure: selectedDeparture,
+                vehicleNumber: selectedVehicle
+            };
+            
+            if (!formData.name || !formData.phone || !formData.idNumber || !formData.departure || !formData.vehicleNumber) {
+                showError('모든 정보를 입력해주세요.');
+                return;
+            }
+            
+            const btn = document.getElementById('submitBtn');
+            const btnText = document.getElementById('submitBtnText');
+            btn.disabled = true;
+            btnText.innerHTML = '<span class="loading"></span>접수 중...';
+            
+            // Google Apps Script 호출
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    action: 'submitRegistration',
+                    data: formData
+                })
+            })
+            .then(response => response.json())
+            .then(result => {
+                btn.disabled = false;
+                btnText.textContent = '접수하기';
+                
+                if (result.success) {
+                    showSuccessPopup(result.message, result.status);
+                } else {
+                    showError('접수 실패: ' + result.message);
+                }
+            })
+            .catch(error => {
+                btn.disabled = false;
+                btnText.textContent = '접수하기';
+                showError('접수가 몰려 처리되지 못했습니다. 잠시 후 다시 시도해주세요.');
+                console.error('접수 제출 오류:', error);
+            });
+        }
+        
+        // 성공 팝업 표시
+        function showSuccessPopup(message, status) {
+            const isWaitingList = status === '대기접수';
+            const popupTitle = isWaitingList ? '대기접수 완료' : '접수 완료';
+            const popupIcon = isWaitingList ? '⏳' : '✅';
+            const popupColor = isWaitingList ? '#f59e0b' : '#10b981';
+            
+            const popupHTML = `
+                <div id="successPopup" style="
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.5);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 10000;
+                    animation: fadeIn 0.3s ease;
+                ">
+                    <div style="
+                        background: white;
+                        padding: 40px 30px;
+                        border-radius: 20px;
+                        box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+                        text-align: center;
+                        max-width: 350px;
+                        width: 90%;
+                        animation: slideUp 0.3s ease;
+                    ">
+                        <div style="
+                            font-size: 48px;
+                            margin-bottom: 20px;
+                            color: ${popupColor};
+                        ">${popupIcon}</div>
+                        
+                        <h2 style="
+                            color: ${popupColor};
+                            margin-bottom: 15px;
+                            font-size: 24px;
+                            font-weight: 700;
+                        ">${popupTitle}</h2>
+                        
+                        <p style="
+                            color: #666;
+                            margin-bottom: 30px;
+                            line-height: 1.5;
+                            font-size: 16px;
+                        ">${message}</p>
+                        
+                        <button onclick="closeSuccessPopup()" style="
+                            background: linear-gradient(135deg, ${popupColor}, ${isWaitingList ? '#d97706' : '#059669'});
+                            color: white;
+                            border: none;
+                            padding: 15px 30px;
+                            border-radius: 12px;
+                            font-size: 16px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: transform 0.2s ease;
+                        ">
+                            확인
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', popupHTML);
+        }
+        
+        // 성공 팝업 닫기
+        function closeSuccessPopup() {
+            const popup = document.getElementById('successPopup');
+            if (popup) {
+                popup.remove();
+                location.reload();
+            }
+        }
+    </script>
+    
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideUp {
+            from { 
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            to { 
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</body>
+</html>
