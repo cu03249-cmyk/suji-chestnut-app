@@ -612,25 +612,40 @@
             fetch(SCRIPT_URL, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'text/plain;charset=utf-8',
                 },
                 body: JSON.stringify({
                     action: 'checkMember',
                     data: { name, phone, idNumber }
                 })
             })
-            .then(response => response.json())
-            .then(result => {
-                btn.disabled = false;
-                btnText.textContent = '조합원 확인';
-                
-                if (result.success) {
-                    showSuccess(result.message);
-                    setTimeout(() => {
-                        nextStep();
-                    }, 1500);
-                } else {
-                    showError(result.message);
+            .then(response => {
+                console.log('응답 상태:', response.status);
+                console.log('응답 헤더:', response.headers);
+                return response.text(); // JSON 파싱 전에 텍스트로 확인
+            })
+            .then(text => {
+                console.log('응답 텍스트:', text);
+                try {
+                    const result = JSON.parse(text);
+                    console.log('파싱된 결과:', result);
+                    
+                    btn.disabled = false;
+                    btnText.textContent = '조합원 확인';
+                    
+                    if (result.success) {
+                        showSuccess(result.message);
+                        setTimeout(() => {
+                            nextStep();
+                        }, 1500);
+                    } else {
+                        showError(result.message);
+                    }
+                } catch (parseError) {
+                    console.error('JSON 파싱 오류:', parseError);
+                    btn.disabled = false;
+                    btnText.textContent = '조합원 확인';
+                    showError('서버 응답을 처리하는 중 오류가 발생했습니다.');
                 }
             })
             .catch(error => {
@@ -663,7 +678,7 @@
             fetch(SCRIPT_URL, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'text/plain;charset=utf-8',
                 },
                 body: JSON.stringify({
                     action: 'getVehicleInfo',
@@ -799,7 +814,7 @@
             fetch(SCRIPT_URL, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'text/plain;charset=utf-8',
                 },
                 body: JSON.stringify({
                     action: 'submitRegistration',
