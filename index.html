@@ -475,19 +475,10 @@
         let currentStep = 1;
         let selectedDeparture = '';
         let selectedVehicle = '';
-        let vehicleData = [
-            { departure: '본점', vehicleNumber: '1호차', maxCapacity: 45, remainingSeats: 45 },
-            { departure: '본점', vehicleNumber: '2호차', maxCapacity: 45, remainingSeats: 45 },
-            { departure: '기흥지점', vehicleNumber: '1호차', maxCapacity: 45, remainingSeats: 45 },
-            { departure: '기흥지점', vehicleNumber: '2호차', maxCapacity: 45, remainingSeats: 45 },
-            { departure: '죽전지점', vehicleNumber: '1호차', maxCapacity: 45, remainingSeats: 45 },
-            { departure: '상현지점', vehicleNumber: '1호차', maxCapacity: 45, remainingSeats: 45 },
-            { departure: '동천지점', vehicleNumber: '1호차', maxCapacity: 45, remainingSeats: 45 },
-            { departure: '동백지점', vehicleNumber: '1호차', maxCapacity: 45, remainingSeats: 45 }
-        ];
+        let vehicleData = [];
         
-        // Google Apps Script Web App URL - 여기에 배포된 웹앱 URL을 입력하세요
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzy_ndy4_r9YIjAGfWBd5NeR7VWaElL658E5mZ_71eMIJmzcbUW0R1BrbD96G01mQr7qw/exec';
+        // Google Apps Script 웹앱 URL
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwBwDeUvwXjBz15gH_tAJHSzEwJ4bwKbfEgSlSuHXu4VNME-geC_27wSigrAzvxZKKJhg/exec';
         
         // 단계 전환
         function showStep(step) {
@@ -605,6 +596,12 @@
                 return;
             }
             
+            // SCRIPT_URL 연결 확인 제거 (이제 실제 URL이 설정됨)
+            // if (SCRIPT_URL === 'YOUR_ACTUAL_WEBAPP_URL_HERE') {
+            //     showError('웹앱 URL이 설정되지 않았습니다. 관리자에게 문의하세요.');
+            //     return;
+            // }
+            
             // 로딩 상태 표시
             const btn = document.getElementById('checkMemberBtn');
             const btnText = document.getElementById('checkBtnText');
@@ -658,14 +655,77 @@
         function loadVehicleData() {
             document.getElementById('selectedDeparture').textContent = `출발지: ${selectedDeparture}`;
             
-            const filteredVehicles = vehicleData.filter(v => v.departure === selectedDeparture);
-            displayVehicles(filteredVehicles);
+            // 로딩 상태 표시
+            const vehicleGrid = document.getElementById('vehicleGrid');
+            vehicleGrid.innerHTML = '<div style="text-align: center; padding: 20px; color: #666;">차량 정보 로딩 중...</div>';
+            
+            // Google Apps Script에서 차량 정보 가져오기
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    action: 'getVehicleInfo',
+                    data: { departure: selectedDeparture }
+                })
+            })
+            .then(response => response.json())
+            .then(vehicles => {
+                if (Array.isArray(vehicles)) {
+                    vehicleData = vehicles;
+                    displayVehicles(vehicles);
+                } else {
+                    // 오류 발생 시 기본 데이터 사용
+                    const defaultVehicles = getDefaultVehicleData(selectedDeparture);
+                    displayVehicles(defaultVehicles);
+                }
+            })
+            .catch(error => {
+                console.error('차량 정보 로딩 오류:', error);
+                // 오류 발생 시 기본 데이터 사용
+                const defaultVehicles = getDefaultVehicleData(selectedDeparture);
+                displayVehicles(defaultVehicles);
+            });
+        }
+        
+        // 기본 차량 데이터 (백업용)
+        function getDefaultVehicleData(departure) {
+            const defaultData = {
+                '본점': [
+                    { departure: '본점', vehicleNumber: '1호차', maxCapacity: 45, registeredCount: 0, remainingSeats: 45 },
+                    { departure: '본점', vehicleNumber: '2호차', maxCapacity: 45, registeredCount: 0, remainingSeats: 45 }
+                ],
+                '기흥지점': [
+                    { departure: '기흥지점', vehicleNumber: '1호차', maxCapacity: 45, registeredCount: 0, remainingSeats: 45 },
+                    { departure: '기흥지점', vehicleNumber: '2호차', maxCapacity: 45, registeredCount: 0, remainingSeats: 45 }
+                ],
+                '죽전지점': [
+                    { departure: '죽전지점', vehicleNumber: '1호차', maxCapacity: 45, registeredCount: 0, remainingSeats: 45 }
+                ],
+                '상현지점': [
+                    { departure: '상현지점', vehicleNumber: '1호차', maxCapacity: 45, registeredCount: 0, remainingSeats: 45 }
+                ],
+                '동천지점': [
+                    { departure: '동천지점', vehicleNumber: '1호차', maxCapacity: 45, registeredCount: 0, remainingSeats: 45 }
+                ],
+                '동백지점': [
+                    { departure: '동백지점', vehicleNumber: '1호차', maxCapacity: 45, registeredCount: 0, remainingSeats: 45 }
+                ]
+            };
+            
+            return defaultData[departure] || [];
         }
         
         // 차량 표시
         function displayVehicles(vehicles) {
             const vehicleGrid = document.getElementById('vehicleGrid');
             vehicleGrid.innerHTML = '';
+            
+            if (vehicles.length === 0) {
+                vehicleGrid.innerHTML = '<div style="text-align: center; padding: 20px; color: #666;">선택한 출발지의 차량 정보가 없습니다.</div>';
+                return;
+            }
             
             vehicles.forEach(vehicle => {
                 const vehicleBtn = document.createElement('div');
@@ -844,24 +904,3 @@
                 location.reload();
             }
         }
-    </script>
-    
-    <style>
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        
-        @keyframes slideUp {
-            from { 
-                transform: translateY(20px);
-                opacity: 0;
-            }
-            to { 
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-    </style>
-</body>
-</html>
