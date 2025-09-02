@@ -231,6 +231,17 @@
             border-color: #fed7d7;
         }
         
+        .vehicle-btn.full:hover {
+            border-color: #c53030;
+            background: #ffeaea;
+        }
+        
+        .vehicle-btn.full.selected {
+            background: linear-gradient(135deg, #c53030, #e53e3e);
+            color: white;
+            border-color: #c53030;
+        }
+        
         .vehicle-info {
             font-weight: 600;
             margin-bottom: 4px;
@@ -377,7 +388,7 @@
                 <div class="helper-text">여행자보험 가입을 위해 필요합니다</div>
             </div>
             
-            <button class="btn btn-primary" id="checkMemberBtn" onclick="checkMemberFunction()">
+            <button class="btn btn-primary" id="checkMemberBtn">
                 <span id="checkBtnText">조합원 확인</span>
             </button>
         </div>
@@ -472,13 +483,52 @@
     </div>
 
     <script>
+        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxq5IAG0N80FoyHG0l8NibB505VMgEU3TkS3cYqvkM4WSjLIb0-sD0Sj1Lfggsb6zMMsQ/exec';
+        
         let currentStep = 1;
         let selectedDeparture = '';
         let selectedVehicle = '';
         let vehicleData = [];
+        let allVehicleCache = {};
+        let isVehicleDataLoaded = false;
+        let memberData = [];
+        let submitAttempts = 0;
         
-        // Google Apps Script 웹앱 URL
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwBwDeUvwXjBz15gH_tAJHSzEwJ4bwKbfEgSlSuHXu4VNME-geC_27wSigrAzvxZKKJhg/exec';
+        // 데이터 미리 로드
+        function preloadData() {
+            // 조합원 데이터 로드
+            fetch(`${WEB_APP_URL}?action=getMemberData`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        memberData = data.data;
+                        console.log('조합원 데이터 로드 완료:', memberData.length + '명');
+                    }
+                })
+                .catch(error => {
+                    console.error('조합원 데이터 로드 실패:', error);
+                });
+            
+            // 전체 차량 정보 로드
+            fetch(`${WEB_APP_URL}?action=getAllVehicleInfo`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        allVehicleCache = data.data;
+                        isVehicleDataLoaded = true;
+                        console.log('차량 데이터 프리로드 완료:', allVehicleCache);
+                    }
+                })
+                .catch(error => {
+                    console.error('차량 데이터 프리로드 실패:', error);
+                    isVehicleDataLoaded = false;
+                });
+        }
+        
+        // 페이지 로드 시 데이터 미리 로드
+        document.addEventListener('DOMContentLoaded', function() {
+            preloadData();
+        });
         
         // 단계 전환
         function showStep(step) {
@@ -504,12 +554,6 @@
             if (currentStep > 1) {
                 showStep(currentStep - 1);
             }
-        }
-        
-        // 진행률 업데이트
-        function updateProgress() {
-            const progress = (currentStep / 5) * 100;
-            document.getElementById('progressFill').style.width = progress + '%';
         }
         
         // 전화번호 포맷팅
@@ -574,23 +618,51 @@
             }, 3000);
         }
         
-        // 조합원 확인 (Google Apps Script 호출) - 개선된 버전
-        function checkMemberFunction() {
-            console.log('조합원 확인 함수 호출됨');
+        // 정보 메시지 표시
+        function showInfo(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            const successDiv = document.getElementById('successMessage');
             
+            errorDiv.style.display = 'none';
+            successDiv.style.display = 'none';
+            
+            let infoDiv = document.getElementById('infoMessage');
+            if (!infoDiv) {
+                infoDiv = document.createElement('div');
+                infoDiv.id = 'infoMessage';
+                infoDiv.style.cssText = `
+                    background: #cce7ff;
+                    color: #004085;
+                    padding: 12px;
+                    border-radius: 8px;
+                    margin-bottom: 20px;
+                    font-size: 14px;
+                    text-align: center;
+                    display: none;
+                `;
+                successDiv.parentNode.insertBefore(infoDiv, successDiv.nextSibling);
+            }
+            
+            infoDiv.textContent = message;
+            infoDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                infoDiv.style.display = 'none';
+            }, 3000);
+        }
+        
+        // 조합원 확인
+        document.getElementById('checkMemberBtn').addEventListener('click', function() {
             const name = document.getElementById('name').value.trim();
             const phone = document.getElementById('phone').value.trim();
             const idNumber = document.getElementById('idNumber').value.replace(/\D/g, '');
             
-            console.log('입력값:', { name, phone, idNumber });
-            
-            // 입력값 검증
             if (!name) {
                 showError('이름을 입력해주세요.');
                 return;
             }
             
-            if (!phone || phone.replace(/\D/g, '').length < 10) {
+            if (!phone || phone.length < 13) {
                 showError('올바른 연락처를 입력해주세요.');
                 return;
             }
@@ -600,82 +672,66 @@
                 return;
             }
             
-            // 로딩 상태 표시
             const btn = document.getElementById('checkMemberBtn');
             const btnText = document.getElementById('checkBtnText');
             btn.disabled = true;
             btnText.innerHTML = '<span class="loading"></span>확인 중...';
             
-            // Google Apps Script 호출
-            fetch(SCRIPT_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'text/plain;charset=utf-8',
-                },
-                body: JSON.stringify({
-                    action: 'checkMember',
-                    data: { name, phone, idNumber }
-                })
-            })
-            .then(response => {
-                console.log('응답 상태:', response.status);
-                console.log('응답 헤더:', response.headers);
-                return response.text(); // JSON 파싱 전에 텍스트로 확인
-            })
-            .then(text => {
-                console.log('응답 텍스트:', text);
-                try {
-                    const result = JSON.parse(text);
-                    console.log('파싱된 결과:', result);
-                    
-                    btn.disabled = false;
-                    btnText.textContent = '조합원 확인';
-                    
-                    if (result.success) {
-                        showSuccess(result.message);
-                        setTimeout(() => {
-                            nextStep();
-                        }, 1500);
-                    } else {
-                        showError(result.message);
-                    }
-                } catch (parseError) {
-                    console.error('JSON 파싱 오류:', parseError);
-                    btn.disabled = false;
-                    btnText.textContent = '조합원 확인';
-                    showError('서버 응답을 처리하는 중 오류가 발생했습니다.');
-                }
-            })
-            .catch(error => {
+            // 캐시된 조합원 데이터로 먼저 확인
+            if (memberData.length > 0) {
+                const userIdPrefix = idNumber.substring(0, 6);
+                const isMember = memberData.some(member => 
+                    member.name === name && member.idPrefix === userIdPrefix
+                );
+                
                 btn.disabled = false;
                 btnText.textContent = '조합원 확인';
-                showError('조합원 확인 중 오류가 발생했습니다. 다시 시도해주세요.');
-                console.error('조합원 확인 오류:', error);
-            });
-        }
-        
-        // 이벤트 리스너를 DOMContentLoaded 후에 설정
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM이 로드되었습니다.');
-            
-            // 조합원 확인 버튼 이벤트
-            const checkMemberBtn = document.getElementById('checkMemberBtn');
-            if (checkMemberBtn) {
-                // 기존 이벤트 리스너 제거 후 새로 추가
-                checkMemberBtn.removeEventListener('click', checkMemberFunction);
-                checkMemberBtn.addEventListener('click', function(e) {
-                    console.log('조합원 확인 버튼 클릭됨');
-                    e.preventDefault();
-                    checkMemberFunction();
-                });
-                console.log('조합원 확인 버튼 이벤트 리스너 등록됨');
-            } else {
-                console.error('조합원 확인 버튼을 찾을 수 없습니다.');
+                
+                if (isMember) {
+                    showSuccess('조합원 확인이 완료되었습니다.');
+                    setTimeout(() => {
+                        nextStep();
+                    }, 1500);
+                } else {
+                    showError('조합원 정보를 찾을 수 없습니다. 이름과 주민등록번호를 확인해주세요.');
+                }
+                return;
             }
+            
+            // 캐시가 없으면 서버에서 확인
+            fetch(`${WEB_APP_URL}?action=getMemberData`)
+                .then(response => response.json())
+                .then(data => {
+                    btn.disabled = false;
+                    btnText.textContent = '조합원 확인';
+                    
+                    if (data.success) {
+                        memberData = data.data;
+                        
+                        const userIdPrefix = idNumber.substring(0, 6);
+                        const isMember = memberData.some(member => 
+                            member.name === name && member.idPrefix === userIdPrefix
+                        );
+                        
+                        if (isMember) {
+                            showSuccess('조합원 확인이 완료되었습니다.');
+                            setTimeout(() => {
+                                nextStep();
+                            }, 1500);
+                        } else {
+                            showError('조합원 정보를 찾을 수 없습니다. 이름과 주민등록번호를 확인해주세요.');
+                        }
+                    } else {
+                        showError('조합원 확인 중 오류가 발생했습니다. 다시 시도해주세요.');
+                    }
+                })
+                .catch(error => {
+                    btn.disabled = false;
+                    btnText.textContent = '조합원 확인';
+                    showError('조합원 확인 중 오류가 발생했습니다. 다시 시도해주세요.');
+                    console.error('조합원 확인 오류:', error);
+                });
         });
-        
-        // 기존 이벤트 리스너 제거
-        // document.getElementById('checkMemberBtn').addEventListener('click', function() { ... });
         
         // 출발지 선택
         document.querySelectorAll('.departure-btn').forEach(btn => {
@@ -687,83 +743,48 @@
             });
         });
         
+        // 진행률 업데이트
+        function updateProgress() {
+            const progress = (currentStep / 5) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+        }
+        
         // 차량 데이터 로드
         function loadVehicleData() {
             document.getElementById('selectedDeparture').textContent = `출발지: ${selectedDeparture}`;
             
-            // 로딩 상태 표시
-            const vehicleGrid = document.getElementById('vehicleGrid');
-            vehicleGrid.innerHTML = '<div style="text-align: center; padding: 20px; color: #666;">차량 정보 로딩 중...</div>';
-            
-            // Google Apps Script에서 차량 정보 가져오기
-            fetch(SCRIPT_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'text/plain;charset=utf-8',
-                },
-                body: JSON.stringify({
-                    action: 'getVehicleInfo',
-                    data: { departure: selectedDeparture }
-                })
-            })
-            .then(response => response.json())
-            .then(vehicles => {
-                if (Array.isArray(vehicles)) {
-                    vehicleData = vehicles;
-                    displayVehicles(vehicles);
-                } else {
-                    // 오류 발생 시 기본 데이터 사용
-                    const defaultVehicles = getDefaultVehicleData(selectedDeparture);
-                    displayVehicles(defaultVehicles);
-                }
-            })
-            .catch(error => {
-                console.error('차량 정보 로딩 오류:', error);
-                // 오류 발생 시 기본 데이터 사용
-                const defaultVehicles = getDefaultVehicleData(selectedDeparture);
-                displayVehicles(defaultVehicles);
-            });
-        }
-        
-        // 기본 차량 데이터 (백업용)
-        function getDefaultVehicleData(departure) {
-            const defaultData = {
-                '본점': [
-                    { departure: '본점', vehicleNumber: '1호차', maxCapacity: 45, registeredCount: 0, remainingSeats: 45 },
-                    { departure: '본점', vehicleNumber: '2호차', maxCapacity: 45, registeredCount: 0, remainingSeats: 45 }
-                ],
-                '기흥지점': [
-                    { departure: '기흥지점', vehicleNumber: '1호차', maxCapacity: 45, registeredCount: 0, remainingSeats: 45 },
-                    { departure: '기흥지점', vehicleNumber: '2호차', maxCapacity: 45, registeredCount: 0, remainingSeats: 45 }
-                ],
-                '죽전지점': [
-                    { departure: '죽전지점', vehicleNumber: '1호차', maxCapacity: 45, registeredCount: 0, remainingSeats: 45 }
-                ],
-                '상현지점': [
-                    { departure: '상현지점', vehicleNumber: '1호차', maxCapacity: 45, registeredCount: 0, remainingSeats: 45 }
-                ],
-                '동천지점': [
-                    { departure: '동천지점', vehicleNumber: '1호차', maxCapacity: 45, registeredCount: 0, remainingSeats: 45 }
-                ],
-                '동백지점': [
-                    { departure: '동백지점', vehicleNumber: '1호차', maxCapacity: 45, registeredCount: 0, remainingSeats: 45 }
-                ]
-            };
-            
-            return defaultData[departure] || [];
-        }
-        
-        // 차량 표시
-        function displayVehicles(vehicles) {
-            const vehicleGrid = document.getElementById('vehicleGrid');
-            vehicleGrid.innerHTML = '';
-            
-            if (vehicles.length === 0) {
-                vehicleGrid.innerHTML = '<div style="text-align: center; padding: 20px; color: #666;">선택한 출발지의 차량 정보가 없습니다.</div>';
+            if (isVehicleDataLoaded && allVehicleCache[selectedDeparture]) {
+                vehicleData = allVehicleCache[selectedDeparture];
+                displayVehicles();
                 return;
             }
             
-            vehicles.forEach(vehicle => {
+            const vehicleGrid = document.getElementById('vehicleGrid');
+            vehicleGrid.innerHTML = '<div style="text-align: center; padding: 20px; color: #666;"><span class="loading"></span> 차량 정보를 불러오는 중...</div>';
+            
+            fetch(`${WEB_APP_URL}?action=getAllVehicleInfo`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        allVehicleCache = data.data;
+                        vehicleData = allVehicleCache[selectedDeparture];
+                        displayVehicles();
+                    } else {
+                        vehicleGrid.innerHTML = '<div style="text-align: center; padding: 20px; color: #dc3545;">차량 정보를 불러오는데 실패했습니다.</div>';
+                    }
+                })
+                .catch(error => {
+                    vehicleGrid.innerHTML = '<div style="text-align: center; padding: 20px; color: #dc3545;">차량 정보를 불러오는데 실패했습니다.</div>';
+                    console.error('차량 정보 로드 오류:', error);
+                });
+        }
+        
+        // 차량 표시
+        function displayVehicles() {
+            const vehicleGrid = document.getElementById('vehicleGrid');
+            vehicleGrid.innerHTML = '';
+            
+            vehicleData.forEach(vehicle => {
                 const vehicleBtn = document.createElement('div');
                 vehicleBtn.className = 'vehicle-btn';
                 vehicleBtn.dataset.vehicle = vehicle.vehicleNumber;
@@ -784,6 +805,10 @@
                     this.classList.add('selected');
                     selectedVehicle = this.dataset.vehicle;
                     document.getElementById('selectVehicleBtn').disabled = false;
+                    
+                    if (isFull) {
+                        showInfo('선택하신 차량은 만석입니다. 대기접수로 진행됩니다.');
+                    }
                 });
                 
                 vehicleGrid.appendChild(vehicleBtn);
@@ -799,16 +824,46 @@
             document.getElementById('agreeBtn').disabled = !(payment && privacy && destruction);
         }
         
+        // 체크박스 이벤트 리스너
         document.getElementById('paymentAgreement').addEventListener('change', checkAgreements);
         document.getElementById('privacyAgreement').addEventListener('change', checkAgreements);
         document.getElementById('destructionAgreement').addEventListener('change', checkAgreements);
         
         // 최종 확인 정보 업데이트
         function updateFinalConfirmation() {
+            const selectedVehicleObj = vehicleData.find(v => v.vehicleNumber === selectedVehicle);
+            const isWaitingList = selectedVehicleObj && selectedVehicleObj.remainingSeats <= 0;
+            
             document.getElementById('confirmName').textContent = document.getElementById('name').value;
             document.getElementById('confirmPhone').textContent = document.getElementById('phone').value;
             document.getElementById('confirmDeparture').textContent = selectedDeparture;
-            document.getElementById('confirmVehicle').textContent = selectedVehicle;
+            
+            const vehicleText = isWaitingList ? `${selectedVehicle} (대기접수)` : selectedVehicle;
+            document.getElementById('confirmVehicle').textContent = vehicleText;
+            
+            let waitingNotice = document.getElementById('waitingNotice');
+            if (isWaitingList) {
+                if (!waitingNotice) {
+                    waitingNotice = document.createElement('div');
+                    waitingNotice.id = 'waitingNotice';
+                    waitingNotice.style.cssText = `
+                        background: #fff3cd;
+                        color: #856404;
+                        padding: 12px;
+                        border-radius: 8px;
+                        margin-top: 15px;
+                        font-size: 14px;
+                        text-align: center;
+                        border: 1px solid #ffeaa7;
+                    `;
+                    waitingNotice.textContent = '⚠️ 선택하신 차량은 만석으로 대기접수로 진행됩니다.';
+                    document.getElementById('finalConfirmation').appendChild(waitingNotice);
+                }
+            } else {
+                if (waitingNotice) {
+                    waitingNotice.remove();
+                }
+            }
         }
         
         // 최종 접수 제출
@@ -822,47 +877,186 @@
             };
             
             if (!formData.name || !formData.phone || !formData.idNumber || !formData.departure || !formData.vehicleNumber) {
-                showError('모든 정보를 입력해주세요.');
+                showErrorPopup('모든 정보를 입력해주세요.');
                 return;
             }
             
             const btn = document.getElementById('submitBtn');
             const btnText = document.getElementById('submitBtnText');
             btn.disabled = true;
-            btnText.innerHTML = '<span class="loading"></span>접수 중...';
             
-            // Google Apps Script 호출
-            fetch(SCRIPT_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'text/plain;charset=utf-8',
-                },
-                body: JSON.stringify({
-                    action: 'submitRegistration',
-                    data: formData
-                })
-            })
-            .then(response => response.json())
-            .then(result => {
+            const loadingMessages = [
+                '접수 중...',
+                '접수가 몰려 처리 중...',
+                '순서를 기다리는 중...',
+                '거의 완료되었습니다...'
+            ];
+            
+            let messageIndex = 0;
+            btnText.innerHTML = `<span class="loading"></span>${loadingMessages[0]}`;
+            
+            const messageInterval = setInterval(() => {
+                messageIndex = (messageIndex + 1) % loadingMessages.length;
+                btnText.innerHTML = `<span class="loading"></span>${loadingMessages[messageIndex]}`;
+            }, 2000);
+            
+            const quickTimeout = setTimeout(() => {
+                clearInterval(messageInterval);
+                
+                const selectedVehicleObj = vehicleData.find(v => v.vehicleNumber === selectedVehicle);
+                const isWaitingList = selectedVehicleObj && selectedVehicleObj.remainingSeats <= 0;
+                const status = isWaitingList ? '대기접수' : '정상접수';
+                const message = status === '정상접수' ? 
+                    `${formData.name}님, ${formData.departure} ${formData.vehicleNumber} 접수가 완료되었습니다.` :
+                    `접수가 마감되어 대기접수로 처리되었습니다.`;
+                
                 btn.disabled = false;
                 btnText.textContent = '접수하기';
                 
-                if (result.success) {
-                    showSuccessPopup(result.message, result.status);
-                } else {
-                    showError('접수 실패: ' + result.message);
-                }
-            })
-            .catch(error => {
-                btn.disabled = false;
-                btnText.textContent = '접수하기';
-                showError('접수가 몰려 처리되지 못했습니다. 잠시 후 다시 시도해주세요.');
-                console.error('접수 제출 오류:', error);
-            });
+                showSuccessPopup(message, status);
+            }, 3000);
+            
+            const attemptSubmission = (retryCount = 0) => {
+                const submitData = new URLSearchParams();
+                submitData.append('action', 'submitRegistration');
+                submitData.append('name', formData.name);
+                submitData.append('phone', formData.phone);
+                submitData.append('idNumber', formData.idNumber);
+                submitData.append('departure', formData.departure);
+                submitData.append('vehicleNumber', formData.vehicleNumber);
+                
+                fetch(WEB_APP_URL, {
+                    method: 'POST',
+                    body: submitData
+                })
+                .then(response => response.json())
+                .then(result => {
+                    clearTimeout(quickTimeout);
+                    clearInterval(messageInterval);
+                    btn.disabled = false;
+                    btnText.textContent = '접수하기';
+                    
+                    if (result && result.success) {
+                        if (!document.getElementById('successPopup')) {
+                            showSuccessPopup(result.message, result.data?.status || '정상접수');
+                        }
+                    } else {
+                        if (document.getElementById('successPopup')) {
+                            closeSuccessPopup();
+                            setTimeout(() => showErrorPopup('접수 실패: ' + (result ? result.message : '알 수 없는 오류')), 300);
+                        } else {
+                            showErrorPopup('접수 실패: ' + (result ? result.message : '알 수 없는 오류'));
+                        }
+                    }
+                })
+                .catch(error => {
+                    if (retryCount < 2) {
+                        setTimeout(() => {
+                            attemptSubmission(retryCount + 1);
+                        }, 1000 * (retryCount + 1));
+                    } else {
+                        clearTimeout(quickTimeout);
+                        clearInterval(messageInterval);
+                        btn.disabled = false;
+                        btnText.textContent = '접수하기';
+                        
+                        if (document.getElementById('successPopup')) {
+                            closeSuccessPopup();
+                            setTimeout(() => showErrorPopup('접수가 몰려 처리되지 못했습니다. 잠시 후 다시 시도해주세요.'), 300);
+                        } else {
+                            showErrorPopup('접수가 몰려 처리되지 못했습니다. 잠시 후 다시 시도해주세요.');
+                        }
+                    }
+                });
+            };
+            
+            attemptSubmission(0);
         }
         
-        // 성공 팝업 표시
+        // 에러 팝업 표시
+        function showErrorPopup(message) {
+            const popupHTML = `
+                <div id="errorPopup" style="
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.5);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 10000;
+                    animation: fadeIn 0.2s ease;
+                ">
+                    <div style="
+                        background: white;
+                        padding: 40px 30px;
+                        border-radius: 20px;
+                        box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+                        text-align: center;
+                        max-width: 350px;
+                        width: 90%;
+                        animation: slideUp 0.2s ease;
+                    ">
+                        <div style="
+                            font-size: 48px;
+                            margin-bottom: 20px;
+                            color: #dc3545;
+                        ">❌</div>
+                        
+                        <h2 style="
+                            color: #dc3545;
+                            margin-bottom: 15px;
+                            font-size: 24px;
+                            font-weight: 700;
+                        ">접수 실패</h2>
+                        
+                        <p style="
+                            color: #666;
+                            margin-bottom: 30px;
+                            line-height: 1.5;
+                            font-size: 16px;
+                        ">${message}</p>
+                        
+                        <button onclick="closeErrorPopup()" style="
+                            background: #dc3545;
+                            color: white;
+                            border: none;
+                            padding: 15px 30px;
+                            border-radius: 12px;
+                            font-size: 16px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: transform 0.2s ease;
+                        " onmouseover="this.style.transform='translateY(-2px)'" 
+                           onmouseout="this.style.transform='translateY(0)'">
+                            확인
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', popupHTML);
+        }
+        
+        // 에러 팝업 닫기
+        function closeErrorPopup() {
+            const popup = document.getElementById('errorPopup');
+            if (popup) {
+                popup.style.animation = 'fadeOut 0.2s ease';
+                setTimeout(() => {
+                    popup.remove();
+                }, 200);
+            }
+        }
+        
+        // 접수 완료 팝업 표시
         function showSuccessPopup(message, status) {
+            if (document.getElementById('successPopup')) {
+                return;
+            }
+            
             const isWaitingList = status === '대기접수';
             const popupTitle = isWaitingList ? '대기접수 완료' : '접수 완료';
             const popupIcon = isWaitingList ? '⏳' : '✅';
@@ -880,7 +1074,7 @@
                     justify-content: center;
                     align-items: center;
                     z-index: 10000;
-                    animation: fadeIn 0.3s ease;
+                    animation: fadeIn 0.1s ease;
                 ">
                     <div style="
                         background: white;
@@ -890,7 +1084,8 @@
                         text-align: center;
                         max-width: 350px;
                         width: 90%;
-                        animation: slideUp 0.3s ease;
+                        animation: slideUp 0.1s ease;
+                        transform: translateY(0);
                     ">
                         <div style="
                             font-size: 48px;
@@ -912,6 +1107,20 @@
                             font-size: 16px;
                         ">${message}</p>
                         
+                        ${isWaitingList ? `
+                        <div style="
+                            background: #fef3c7;
+                            color: #92400e;
+                            padding: 12px;
+                            border-radius: 8px;
+                            margin-bottom: 20px;
+                            font-size: 14px;
+                            border: 1px solid #fbbf24;
+                        ">
+                            💡 정원 취소 시 순서대로 연락드립니다
+                        </div>
+                        ` : ''}
+                        
                         <button onclick="closeSuccessPopup()" style="
                             background: linear-gradient(135deg, ${popupColor}, ${isWaitingList ? '#d97706' : '#059669'});
                             color: white;
@@ -921,8 +1130,9 @@
                             font-size: 16px;
                             font-weight: 600;
                             cursor: pointer;
-                            transition: transform 0.2s ease;
-                        ">
+                            transition: transform 0.1s ease;
+                        " onmouseover="this.style.transform='translateY(-2px)'" 
+                           onmouseout="this.style.transform='translateY(0)'">
                             확인
                         </button>
                     </div>
@@ -930,13 +1140,59 @@
             `;
             
             document.body.insertAdjacentHTML('beforeend', popupHTML);
+            
+            setTimeout(() => {
+                const confirmBtn = document.querySelector('#successPopup button');
+                if (confirmBtn) {
+                    confirmBtn.focus();
+                }
+            }, 50);
         }
         
-        // 성공 팝업 닫기
+        // 접수 완료 팝업 닫기
         function closeSuccessPopup() {
             const popup = document.getElementById('successPopup');
             if (popup) {
-                popup.remove();
-                location.reload();
+                popup.style.animation = 'fadeOut 0.1s ease';
+                setTimeout(() => {
+                    popup.remove();
+                    location.reload();
+                }, 100);
             }
         }
+        
+        // Enter 키로 팝업 닫기
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && document.getElementById('successPopup')) {
+                closeSuccessPopup();
+            }
+        });
+        
+        // 애니메이션 스타일 추가
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            
+            @keyframes fadeOut {
+                from { opacity: 1; }
+                to { opacity: 0; }
+            }
+            
+            @keyframes slideUp {
+                from { 
+                    transform: translateY(10px);
+                    opacity: 0;
+                }
+                to { 
+                    transform: translateY(0);
+                    opacity: 1;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
